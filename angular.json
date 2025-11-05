@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "ngx-graphql-client": {
+      "projectType": "library",
+      "root": "projects/ngx-graphql-client",
+      "sourceRoot": "projects/ngx-graphql-client/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/ngx-graphql-client/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ngx-graphql-client/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/ngx-graphql-client/**/*.ts",
+              "projects/ngx-graphql-client/**/*.html"
+            ]
+          }
+        },
+        "test": {
+          "builder": "@angular-builders/jest:run",
+          "options": {
+            "silent": true
+          }
+        }
+      }
+    }
+  }
+}
