@@ -1,4 +1,4 @@
-# ngx-graphql-client
+# @alevettih/ngx-graphql-client
 
 A typed GraphQL client for Angular applications with full TypeScript support.
 
