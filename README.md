@@ -1,11 +1,11 @@
-# ngx-graphql-client
+# @alevettih/ngx-graphql-client
 
 A typed GraphQL client for Angular applications that makes it easy to work with
 GraphQL APIs using full TypeScript support.
 
 ## Overview
 
-`ngx-graphql-client` is an Angular library that provides a simple, type-safe way
+`@alevettih/ngx-graphql-client` is an Angular library that provides a simple, type-safe way
 to work with GraphQL APIs. The library relies on typed GraphQL operations and
 integrates with Angular HttpClient to execute requests.
 

@@ -55,10 +55,8 @@ jobs:
       - name: Build library
         run: npm run build
 
-      - name: Go to dist directory
-        run: cd dist/ngx-graphql-client
-
       - name: Publish package
         run: npm publish --access public
+        working-directory: dist/ngx-graphql-client
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
