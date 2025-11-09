@@ -1,6 +1,6 @@
-import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { mergeWith, omit } from 'es-toolkit';
+import { mergeWith } from 'es-toolkit';
 import {
   type DefinitionNode,
   type ExecutionResult,
@@ -12,17 +12,13 @@ import { first, map, Observable } from 'rxjs';
 
 import {
   type BatchData,
-  type RequestContext,
+  type RequestOptions,
   type RequestData,
   type TypedGraphQLDocumentNode,
 } from '../../models';
 import { type GetResponseData, type UnionToIntersection } from '../../types';
 
-import {
-  NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT,
-  NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER,
-  NGX_GRAPHQL_CLIENT_CONFIG,
-} from './graphql-client.tokens';
+import { NGX_GRAPHQL_CLIENT_CONFIG } from './graphql-client.tokens';
 
 @Injectable()
 export class GraphQLClient {
@@ -35,7 +31,7 @@ export class GraphQLClient {
   public query<Operation, Variables>(
     document: TypedGraphQLDocumentNode<Operation, Variables>,
     variables: Variables,
-    context: RequestContext = {},
+    options?: RequestOptions,
   ): Observable<Operation> {
     return this.send(
       {
@@ -43,7 +39,7 @@ export class GraphQLClient {
         query: print(document),
         variables,
       },
-      context,
+      options,
     ).pipe(
       map(
         (response) =>
@@ -55,7 +51,7 @@ export class GraphQLClient {
   public mutate<Operation, Variables>(
     document: TypedGraphQLDocumentNode<Operation, Variables>,
     variables: Variables,
-    context: RequestContext = {},
+    options?: RequestOptions,
   ): Observable<Operation> {
     return this.send(
       {
@@ -63,7 +59,7 @@ export class GraphQLClient {
         query: print(document),
         variables,
       },
-      context,
+      options,
     ).pipe(
       map(
         (response) =>
@@ -77,7 +73,7 @@ export class GraphQLClient {
     ResponseData extends object = GetResponseData<Data[number]['document']>,
   >(
     requests: Data,
-    context: RequestContext = {},
+    options?: RequestOptions,
   ): Observable<UnionToIntersection<ResponseData>> {
     return this.send(
       requests.map(({ document, variables }) => ({
@@ -85,7 +81,7 @@ export class GraphQLClient {
         query: print(document),
         variables: variables as unknown,
       })),
-      context,
+      options,
     ).pipe(
       map(
         (response) =>
@@ -118,26 +114,41 @@ export class GraphQLClient {
 
   private send<Operation, Variables, Response = Operation>(
     body: RequestData<Variables> | RequestData<Variables>[],
-    ctx?: RequestContext,
+    options?: RequestOptions,
   ): Observable<Response> {
-    const contextInst: HttpContext = new HttpContext();
-    contextInst.set(
-      NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER,
-      ctx?.errorHandlerFn,
-    );
-    contextInst.set(
-      NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT,
-      omit(ctx ?? {}, ['errorHandlerFn']),
-    );
-
     return this.http
       .post(this.url, body, {
-        context: contextInst,
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-        }),
+        ...options,
+        headers: this.mergeHeaders(options?.headers),
       })
       .pipe(first()) as Observable<Response>;
+  }
+
+  private mergeHeaders(
+    headers?: HttpHeaders | Record<string, string | string[]>,
+  ): HttpHeaders {
+    if (!headers) {
+      return new HttpHeaders({
+        'Content-Type': 'application/json',
+      });
+    }
+
+    if (headers instanceof HttpHeaders) {
+      return headers.has('Content-Type') || headers.has('content-type')
+        ? headers
+        : headers.set('Content-Type', 'application/json');
+    }
+
+    const normalizedHeaders = { ...headers };
+    const hasContentType = Object.keys(normalizedHeaders).some(
+      (key) => key.toLowerCase() === 'content-type',
+    );
+
+    if (!hasContentType) {
+      normalizedHeaders['Content-Type'] = 'application/json';
+    }
+
+    return new HttpHeaders(normalizedHeaders);
   }
 
   private getOperationName(

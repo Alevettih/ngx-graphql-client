@@ -1,8 +1,7 @@
 import { HttpContextToken } from '@angular/common/http';
 import { InjectionToken } from '@angular/core';
 
-import { type GraphQLErrorResponse } from '../../models';
-import { type GraphQLClientConfig } from '../../models/graphql-client-config.model';
+import { GraphQLErrorResponse, type GraphQLClientConfig } from '../../models';
 import { type ErrorHandlerFn } from '../../types';
 
 export const NGX_GRAPHQL_CLIENT_CONFIG: InjectionToken<GraphQLClientConfig> =
@@ -16,6 +15,3 @@ export const NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER: HttpContextToken<ErrorHan
         throw error;
       },
   );
-
-export const NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT: HttpContextToken<Record<string, unknown>> =
-  new HttpContextToken<Record<string, unknown>>((): Record<string, unknown> => ({}));

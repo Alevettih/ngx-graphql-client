@@ -1,4 +1,4 @@
-import { HttpContext, HttpHeaders, HttpClient } from '@angular/common/http';
+import { HttpHeaders, HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
@@ -6,11 +6,7 @@ import { GraphQLClientConfig } from '../../models';
 
 import { listQuery, itemQuery, itemMutation } from './__mocks__';
 import { GraphQLClient } from './graphql-client.service';
-import {
-  NGX_GRAPHQL_CLIENT_CONFIG,
-  NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT,
-  NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER,
-} from './graphql-client.tokens';
+import { NGX_GRAPHQL_CLIENT_CONFIG } from './graphql-client.tokens';
 
 describe('GraphQLClient', () => {
   function setup<D>(
@@ -78,14 +74,13 @@ describe('GraphQLClient', () => {
           expect(http.post).toHaveBeenCalledTimes(1);
           expect(http.post).toHaveBeenCalledWith(
             '/api/graphql',
-            expect.objectContaining({
+            {
               operationName: 'UserQuery',
               query: expect.stringContaining('query UserQuery') as string,
               variables,
-            }),
+            },
             expect.objectContaining({
               headers: expect.any(HttpHeaders) as HttpHeaders,
-              context: expect.any(HttpContext) as HttpContext,
             }),
           );
           expect(result).toEqual(data);
@@ -107,22 +102,6 @@ describe('GraphQLClient', () => {
         },
       });
     });
-
-    it('should include custom context in request', (done) => {
-      const { document, variables, data } = itemQuery.generateMock('user')();
-      const { service, getRequestOptions } = setup({ data });
-
-      service.query(document, variables, { customHeader: 'value' }).subscribe({
-        next: () => {
-          const context = getRequestOptions()?.context;
-          expect(
-            context?.get(NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT)
-              .customHeader,
-          ).toBe('value');
-          done();
-        },
-      });
-    });
   });
 
   describe('mutate', () => {
@@ -137,14 +116,13 @@ describe('GraphQLClient', () => {
           expect(http.post).toHaveBeenCalledTimes(1);
           expect(http.post).toHaveBeenCalledWith(
             '/api/graphql',
-            expect.objectContaining({
+            {
               operationName: 'UserMutation',
               query: expect.stringContaining('mutation UserMutation') as string,
               variables,
-            }),
+            },
             expect.objectContaining({
               headers: expect.any(HttpHeaders) as HttpHeaders,
-              context: expect.any(HttpContext) as HttpContext,
             }),
           );
           expect(result).toEqual(data);
@@ -162,22 +140,6 @@ describe('GraphQLClient', () => {
           expect(
             getRequestBody<{ operationName: string }>().operationName,
           ).toBe('UserMutation');
-          done();
-        },
-      });
-    });
-
-    it('should include custom context in request', (done) => {
-      const { document, variables, data } = itemMutation.generateMock('user')();
-      const { service, getRequestOptions } = setup({ data });
-
-      service.mutate(document, variables, { customHeader: 'value' }).subscribe({
-        next: () => {
-          const context = getRequestOptions()?.context;
-          expect(
-            context?.get(NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT)
-              .customHeader,
-          ).toBe('value');
           done();
         },
       });
@@ -207,7 +169,7 @@ describe('GraphQLClient', () => {
           next: (result) => {
             expect(http.post).toHaveBeenCalledWith(
               '/api/graphql',
-              expect.objectContaining([
+              [
                 {
                   operationName: 'UserQuery',
                   query: expect.stringContaining('query UserQuery') as string,
@@ -220,10 +182,9 @@ describe('GraphQLClient', () => {
                   ) as string,
                   variables: postsListQuery.variables,
                 },
-              ]),
+              ],
               expect.objectContaining({
                 headers: expect.any(HttpHeaders) as HttpHeaders,
-                context: expect.any(HttpContext) as HttpContext,
               }),
             );
             expect(result).toEqual({
@@ -271,22 +232,6 @@ describe('GraphQLClient', () => {
           },
         });
     });
-
-    it('should include custom context in batch request', (done) => {
-      const { document, variables, data } = itemQuery.generateMock('user')();
-      const { service, getRequestOptions } = setup([{ data }]);
-      const requests = [{ document, variables }];
-
-      service.batch(requests, { customHeader: 'value' }).subscribe({
-        next: () => {
-          const options = getRequestOptions();
-          expect(
-            options?.context?.get(NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT),
-          ).toEqual({ customHeader: 'value' });
-          done();
-        },
-      });
-    });
   });
 
   describe('request formatting', () => {
@@ -301,6 +246,47 @@ describe('GraphQLClient', () => {
           done();
         },
       });
+    });
+
+    it('should merge HttpHeaders with default Content-Type header', (done) => {
+      const { document, variables, data } = itemQuery.generateMock('user')();
+      const { service, getRequestOptions } = setup({ data });
+      const authorizationToken = 'Bearer test-token';
+
+      service
+        .query(document, variables, {
+          headers: new HttpHeaders({
+            Authorization: authorizationToken,
+          }),
+        })
+        .subscribe({
+          next: () => {
+            const headers = getRequestOptions()?.headers as HttpHeaders;
+            expect(headers.get('Content-Type')).toBe('application/json');
+            expect(headers.get('Authorization')).toBe(authorizationToken);
+            done();
+          },
+        });
+    });
+
+    it('should merge literal headers with default Content-Type header', (done) => {
+      const { document, variables, data } = itemQuery.generateMock('user')();
+      const { service, getRequestOptions } = setup({ data });
+
+      service
+        .query(document, variables, {
+          headers: {
+            Authorization: 'Bearer literal-token',
+          },
+        })
+        .subscribe({
+          next: () => {
+            const headers = getRequestOptions()?.headers as HttpHeaders;
+            expect(headers.get('Content-Type')).toBe('application/json');
+            expect(headers.get('Authorization')).toBe('Bearer literal-token');
+            done();
+          },
+        });
     });
 
     it('should handle query without operation name', (done) => {
@@ -322,52 +308,6 @@ describe('GraphQLClient', () => {
           done();
         },
       });
-    });
-  });
-
-  describe('error handling context', () => {
-    it('should set error handler in context when provided', (done) => {
-      const errorHandler = jest.fn();
-      const { document, variables, data } = itemQuery.generateMock('user')();
-      const { service, getRequestOptions } = setup({ data });
-
-      service
-        .query(document, variables, { errorHandlerFn: errorHandler })
-        .subscribe({
-          next: () => {
-            const requestOptions = getRequestOptions();
-            const contextValue = requestOptions?.context?.get(
-              NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER,
-            );
-
-            expect(requestOptions?.context).toBeInstanceOf(HttpContext);
-            expect(contextValue).toBe(errorHandler);
-            done();
-          },
-        });
-    });
-
-    it('should exclude errorHandlerFn from custom context', (done) => {
-      const errorHandler = jest.fn();
-      const { document, variables, data } = itemQuery.generateMock('user')();
-      const { service, getRequestOptions } = setup({ data });
-
-      service
-        .query(document, variables, {
-          errorHandlerFn: errorHandler,
-          customKey: 'customValue',
-        })
-        .subscribe({
-          next: () => {
-            const requestOptions = getRequestOptions();
-            const contextValue = requestOptions?.context?.get(
-              NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT,
-            );
-            expect(requestOptions?.context).toBeInstanceOf(HttpContext);
-            expect(contextValue?.errorHandlerFn).toBeUndefined();
-            done();
-          },
-        });
     });
   });
 });

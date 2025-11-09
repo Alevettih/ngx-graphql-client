@@ -1,19 +1,17 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { type EnvironmentProviders, type Provider, makeEnvironmentProviders } from '@angular/core';
+import {
+  type EnvironmentProviders,
+  type Provider,
+  makeEnvironmentProviders,
+} from '@angular/core';
 
 import { graphQLErrorInterceptor } from './interceptors';
 import { type GraphQLClientConfig } from './models/graphql-client-config.model';
 import { GraphQLClient, NGX_GRAPHQL_CLIENT_CONFIG } from './services';
 
-export function provideGraphQLClient(config?: GraphQLClientConfig): EnvironmentProviders {
-  return makeEnvironmentProviders([
-    provideHttpClient(withInterceptors([graphQLErrorInterceptor])),
-    GraphQLClient,
-    ...getProviders(config),
-  ]);
-}
-
-function getProviders(config?: GraphQLClientConfig): Provider[] {
+export function provideGraphQLClient(
+  config?: GraphQLClientConfig,
+): EnvironmentProviders {
   const providers: Provider[] = [];
 
   if (config) {
@@ -23,5 +21,9 @@ function getProviders(config?: GraphQLClientConfig): Provider[] {
     });
   }
 
-  return providers;
+  return makeEnvironmentProviders([
+    provideHttpClient(withInterceptors([graphQLErrorInterceptor])),
+    GraphQLClient,
+    ...providers,
+  ]);
 }
