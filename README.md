@@ -13,9 +13,9 @@ integrates with Angular HttpClient to execute requests.
 
 - ✅ Full TypeScript support for GraphQL operations
 - ✅ Support for queries, mutations, and batch operations
-- ✅ Automatic error handling via an HTTP interceptor
 - ✅ Custom error handlers per request
-- ✅ Integration with Angular HttpClient
+- ✅ Automatically throws when a GraphQL response includes errors (via the built-in HTTP interceptor)
+- ✅ Seamless integration with Angular HttpClient, including support for all `HttpClient.post` options in every client method
 
 ## Project Structure
 

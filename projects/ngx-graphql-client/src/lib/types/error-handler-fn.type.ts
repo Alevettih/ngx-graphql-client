@@ -1,3 +1,3 @@
-import { type HttpErrorResponse } from '@angular/common/http';
+import { GraphQLErrorResponse } from '../models';
 
-export type ErrorHandlerFn<R = unknown> = (error: HttpErrorResponse) => R;
+export type ErrorHandlerFn<R = unknown> = (error: GraphQLErrorResponse) => R;

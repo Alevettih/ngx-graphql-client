@@ -1,10 +1,22 @@
-import { type HttpErrorResponse, type HttpRequest, type HttpResponse } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  type HttpRequest,
+  type HttpResponse,
+} from '@angular/common/http';
+import { ExecutionResult } from 'graphql';
 
-export interface GraphQLErrorResponse<Data = unknown, Error = unknown> extends HttpErrorResponse {
-  error: {
-    errors: Error[];
-    data: Data;
-    response: HttpResponse<unknown>;
-    request: HttpRequest<unknown>;
-  };
+export class GraphQLErrorResponse<Data = unknown> extends HttpErrorResponse {
+  constructor(
+    public readonly response: HttpResponse<unknown> | HttpErrorResponse,
+    public readonly request: HttpRequest<unknown>,
+    public override readonly error: ExecutionResult<Data>,
+  ) {
+    super({
+      url: response.url as string,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      error,
+    });
+  }
 }
