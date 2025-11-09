@@ -1,5 +1,7 @@
 import { capitalize } from 'es-toolkit';
-import { parse, type TypedQueryDocumentNode } from 'graphql';
+import { parse } from 'graphql';
+
+import { type TypedGraphQLDocumentNode } from '../../../models';
 
 import { type MockGenerationResult } from './mock-generation-result.model';
 
@@ -34,7 +36,7 @@ export function generateMock<
             name
           }
         }
-      `) as TypedQueryDocumentNode<ResponseData, RequestVariables>,
+      `) as unknown as TypedGraphQLDocumentNode<ResponseData, RequestVariables>,
     };
   };
 }

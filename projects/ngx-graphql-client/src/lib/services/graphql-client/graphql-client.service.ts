@@ -4,7 +4,6 @@ import { mergeWith, omit } from 'es-toolkit';
 import {
   type DefinitionNode,
   type ExecutionResult,
-  type TypedQueryDocumentNode,
   isDefinitionNode,
   print,
 } from 'graphql';
@@ -15,8 +14,9 @@ import {
   type BatchData,
   type RequestContext,
   type RequestData,
+  type TypedGraphQLDocumentNode,
 } from '../../models';
-import { type UnionToIntersection } from '../../types';
+import { type GetResponseData, type UnionToIntersection } from '../../types';
 
 import {
   NGX_GRAPHQL_CLIENT_CUSTOM_REQUEST_CONTEXT,
@@ -33,7 +33,7 @@ export class GraphQLClient {
   private readonly http: HttpClient = inject(HttpClient);
 
   public query<Operation, Variables>(
-    document: TypedQueryDocumentNode<Operation, Variables>,
+    document: TypedGraphQLDocumentNode<Operation, Variables>,
     variables: Variables,
     context: RequestContext = {},
   ): Observable<Operation> {
@@ -53,7 +53,7 @@ export class GraphQLClient {
   }
 
   public mutate<Operation, Variables>(
-    document: TypedQueryDocumentNode<Operation, Variables>,
+    document: TypedGraphQLDocumentNode<Operation, Variables>,
     variables: Variables,
     context: RequestContext = {},
   ): Observable<Operation> {
@@ -74,11 +74,7 @@ export class GraphQLClient {
 
   public batch<
     Data extends BatchData[],
-    ResponseData extends object = ReturnType<
-      NonNullable<
-        Data[number]['document']['__ensureTypesOfVariablesAndResultMatching']
-      >
-    >,
+    ResponseData extends object = GetResponseData<Data[number]['document']>,
   >(
     requests: Data,
     context: RequestContext = {},
