@@ -1,7 +1,7 @@
 {
   "name": "@alevettih/ngx-graphql-client",
   "description": "A typed GraphQL client for Angular applications with full TypeScript support.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "homepage": "https://github.com/Alevettih/ngx-graphql-client",
   "author": {
     "name": "Alexandr Tikhonenko",
@@ -21,7 +21,8 @@
   "license": "MIT",
   "keywords": [
     "graphql",
-    "angular"
+    "angular",
+    "typescript"
   ],
   "repository": {
     "type": "github",
