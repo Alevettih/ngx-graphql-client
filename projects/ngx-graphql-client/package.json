@@ -21,7 +21,8 @@
   "license": "MIT",
   "keywords": [
     "graphql",
-    "angular"
+    "angular",
+    "typescript"
   ],
   "repository": {
     "type": "github",

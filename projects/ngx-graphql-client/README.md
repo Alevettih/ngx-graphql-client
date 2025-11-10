@@ -105,141 +105,69 @@ Primary service for executing GraphQL operations.
 
 Executes a GraphQL query operation.
 
-**Parameters:**
+| Parameter   | Type                                             | Description                                       |
+| ----------- | ------------------------------------------------ | ------------------------------------------------- |
+| `document`  | `TypedGraphQLDocumentNode<Operation, Variables>` | Typed GraphQL operation definition                |
+| `variables` | `Variables`                                      | Variables required by the operation               |
+| `options?`  | `RequestOptions`                                 | Optional HTTP options passed to `HttpClient.post` |
 
-- `document: TypedGraphQLDocumentNode<Operation, Variables>` – typed GraphQL operation
-- `variables: Variables` – operation variables
-- `options?: RequestOptions` – optional HTTP options passed to `HttpClient.post`
-
-**Returns:** `Observable<Operation>`
-
-**Example:**
-
-```typescript
-const GET_USER = gql`
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      name
-    }
-  }
-` as TypedGraphQLDocumentNode<
-  { user: { id: string; name: string } },
-  { id: string }
->;
-
-this.graphql.query(GET_USER, { id: '123' }).subscribe((data) => {
-  console.log(data.user);
-});
-```
+| Returns                 | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `Observable<Operation>` | Emits the typed response for the GraphQL query |
 
 ##### `mutate<Operation, Variables>(document, variables, options?)`
 
 Executes a GraphQL mutation.
 
-**Parameters:**
+| Parameter   | Type                                             | Description                                       |
+| ----------- | ------------------------------------------------ | ------------------------------------------------- |
+| `document`  | `TypedGraphQLDocumentNode<Operation, Variables>` | Typed GraphQL mutation definition                 |
+| `variables` | `Variables`                                      | Variables required by the mutation                |
+| `options?`  | `RequestOptions`                                 | Optional HTTP options passed to `HttpClient.post` |
 
-- `document: TypedGraphQLDocumentNode<Operation, Variables>` – typed GraphQL operation
-- `variables: Variables` – operation variables
-- `options?: RequestOptions` – optional HTTP options passed to `HttpClient.post`
-
-**Returns:** `Observable<Operation>`
-
-**Example:**
-
-```typescript
-const CREATE_USER = gql`
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
-      id
-      name
-    }
-  }
-` as TypedGraphQLDocumentNode<
-  { createUser: { id: string; name: string } },
-  { input: { name: string; email: string } }
->;
-
-this.graphql
-  .mutate(CREATE_USER, { input: { name: 'John', email: 'john@example.com' } })
-  .subscribe((data) => {
-    console.log(data.createUser);
-  });
-```
+| Returns                 | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| `Observable<Operation>` | Emits the typed response for the GraphQL mutation |
 
 ##### `batch<Data, ResponseData>(requests, options?)`
 
 Executes multiple GraphQL operations in a single HTTP request (batch request).
 
-**Parameters:**
+| Parameter  | Type             | Description                                                      |
+| ---------- | ---------------- | ---------------------------------------------------------------- |
+| `requests` | `BatchData[]`    | Collection of typed operations and variables to execute together |
+| `options?` | `RequestOptions` | Optional HTTP options passed to `HttpClient.post`                |
 
-- `requests: BatchData[]` – list of operations to execute
-- `options?: RequestOptions` – optional HTTP options passed to `HttpClient.post`
-
-**Returns:** `Observable<UnionToIntersection<ResponseData>>`
-
-**Example:**
-
-```typescript
-import { type BatchData } from '@alevettih/ngx-graphql-client';
-
-const requests: BatchData[] = [
-  { document: GET_USERS, variables: { limit: 10 } },
-  // Define GET_POSTS in the same way
-  { document: GET_POSTS, variables: { limit: 5 } },
-];
-
-this.graphql.batch(requests).subscribe((data) => {
-  // data contains the combined results of all operations
-  console.log(data.users);
-  console.log(data.posts);
-});
-```
+| Returns                                         | Description                                                |
+| ----------------------------------------------- | ---------------------------------------------------------- |
+| `Observable<UnionToIntersection<ResponseData>>` | Emits the merged typed responses of all batched operations |
 
 ### Configuration
 
 #### GraphQLClientConfig
 
-```typescript
-interface GraphQLClientConfig {
-  url: string; // GraphQL endpoint URL
-}
-```
-
-**Default:** `url: '/api/graphql'`
+| Field | Type     | Description                             | Default          |
+| ----- | -------- | --------------------------------------- | ---------------- |
+| `url` | `string` | GraphQL endpoint URL used by the client | `'/api/graphql'` |
 
 ### Data Models
 
 #### BatchData
 
-```typescript
-interface BatchData<Operation = any, Variables = any> {
-  document: TypedGraphQLDocumentNode<Operation, Variables>;
-  variables: Variables;
-}
-```
+| Field       | Type                                             | Description                         |
+| ----------- | ------------------------------------------------ | ----------------------------------- |
+| `document`  | `TypedGraphQLDocumentNode<Operation, Variables>` | Typed GraphQL operation definition  |
+| `variables` | `Variables`                                      | Variables required by the operation |
 
 #### GraphQLErrorResponse
 
 Extended `HttpErrorResponse` with additional error details:
 
-```typescript
-export class GraphQLErrorResponse<Data = unknown> extends HttpErrorResponse {
-  constructor(
-    public readonly response: HttpResponse<unknown> | HttpErrorResponse,
-    public readonly request: HttpRequest<unknown>,
-    public override readonly error: ExecutionResult<Data>,
-  ) {
-    super({
-      url: response.url as string,
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      error,
-    });
-  }
-}
-```
+| Field      | Type                                         | Description                                       |
+| ---------- | -------------------------------------------- | ------------------------------------------------- |
+| `response` | `HttpResponse<unknown> \| HttpErrorResponse` | Original HTTP response received from the server   |
+| `request`  | `HttpRequest<unknown>`                       | HTTP request that triggered the GraphQL error     |
+| `error`    | `ExecutionResult<Data>`                      | GraphQL execution result containing error details |
 
 #### RequestOptions
 
@@ -296,7 +224,7 @@ We recommend using schema-based type generation tools such as:
 
 ## License
 
-This library is distributed under the [MIT](../../LICENSE) license.
+This library is distributed under the [MIT](LICENSE) license.
 
 ## Support
 
