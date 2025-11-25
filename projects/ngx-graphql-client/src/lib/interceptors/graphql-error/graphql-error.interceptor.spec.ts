@@ -6,7 +6,7 @@ import {
 } from '@angular/common/http';
 import { lastValueFrom, of, throwError } from 'rxjs';
 
-import { GraphQLErrorResponse } from '../../models';
+import { type GraphQLErrorResponse } from '../../models';
 import { NGX_GRAPHQL_CLIENT_REQUEST_ERROR_HANDLER } from '../../services';
 
 import { graphQLErrorInterceptor } from './graphql-error.interceptor';
@@ -29,7 +29,7 @@ describe('graphQLErrorInterceptor', (): void => {
     testError: (error: (error: GraphQLErrorResponse) => void) => Promise<void>;
     response: HttpResponse<unknown> | HttpErrorResponse;
   } {
-    const mockNext: jest.Mock = jest.fn();
+    const mockNext = vi.fn();
     const request: HttpRequest<unknown> = new HttpRequest(
       'POST',
       '/api/graphql',
@@ -131,7 +131,7 @@ describe('graphQLErrorInterceptor', (): void => {
 
   describe('when HTTP error occurs', (): void => {
     it('should handle HTTP errors with custom handler', async (): Promise<void> => {
-      const customHandler = jest
+      const customHandler = vi
         .fn()
         .mockReturnValue(
           throwError((): HttpResponse<unknown> | HttpErrorResponse => response),
@@ -157,9 +157,9 @@ describe('graphQLErrorInterceptor', (): void => {
     });
 
     it('should log and rethrow HTTP errors without custom handler', async (): Promise<void> => {
-      const consoleSpy: jest.SpyInstance = jest
+      const consoleSpy = vi
         .spyOn(console, 'error')
-        .mockImplementation();
+        .mockImplementation(() => {});
       const { response, testError } = setup(
         new HttpErrorResponse({
           status: 500,

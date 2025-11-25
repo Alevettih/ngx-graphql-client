@@ -1,8 +1,9 @@
 import { HttpHeaders, HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
+import { type MockedFunction } from 'vitest';
 
-import { GraphQLClientConfig } from '../../models';
+import { type GraphQLClientConfig } from '../../models';
 
 import { listQuery, itemQuery, itemMutation } from './__mocks__';
 import { GraphQLClient } from './graphql-client.service';
@@ -14,13 +15,13 @@ describe('GraphQLClient', () => {
     config?: GraphQLClientConfig,
   ): {
     service: GraphQLClient;
-    http: jest.Mocked<HttpClient>;
+    http: { post: MockedFunction<HttpClient['post']> };
     getRequestBody<B>(): B;
     getRequestOptions(): Parameters<HttpClient['patch']>[2];
   } {
     const http = {
-      post: jest.fn().mockReturnValue(of(responseData)),
-    } as unknown as jest.Mocked<HttpClient>;
+      post: vi.fn().mockReturnValue(of(responseData)),
+    } as { post: MockedFunction<HttpClient['post']> };
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -65,89 +66,75 @@ describe('GraphQLClient', () => {
   });
 
   describe('query', () => {
-    it('should send query request with correct format', (done) => {
+    it('should send query request with correct format', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock('user')();
       const { service, http } = setup({ data });
+      const result = await lastValueFrom(service.query(document, variables));
 
-      service.query(document, variables).subscribe({
-        next: (result) => {
-          expect(http.post).toHaveBeenCalledTimes(1);
-          expect(http.post).toHaveBeenCalledWith(
-            '/api/graphql',
-            {
-              operationName: 'UserQuery',
-              query: expect.stringContaining('query UserQuery') as string,
-              variables,
-            },
-            expect.objectContaining({
-              headers: expect.any(HttpHeaders) as HttpHeaders,
-            }),
-          );
-          expect(result).toEqual(data);
-          done();
+      expect(http.post).toHaveBeenCalledTimes(1);
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/graphql',
+        {
+          operationName: 'UserQuery',
+          query: expect.stringContaining('query UserQuery') as string,
+          variables,
         },
-      });
+        expect.objectContaining({
+          headers: expect.any(HttpHeaders) as HttpHeaders,
+        }),
+      );
+      expect(result).toEqual(data);
     });
 
-    it('should extract operation name correctly', (done) => {
+    it('should extract operation name correctly', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock('user')();
       const { service, getRequestBody } = setup({ data });
 
-      service.query(document, variables).subscribe({
-        next: () => {
-          expect(
-            getRequestBody<{ operationName: string }>().operationName,
-          ).toBe('UserQuery');
-          done();
-        },
-      });
+      await lastValueFrom(service.query(document, variables));
+
+      expect(getRequestBody<{ operationName: string }>().operationName).toBe(
+        'UserQuery',
+      );
     });
   });
 
   describe('mutate', () => {
-    it('should send mutation request with correct format', (done) => {
+    it('should send mutation request with correct format', async (): Promise<void> => {
       const { document, variables, data } = itemMutation.generateMock('user')();
       const { service, http } = setup({
         data,
       });
+      const result = await lastValueFrom(service.mutate(document, variables));
 
-      service.mutate(document, variables).subscribe({
-        next: (result) => {
-          expect(http.post).toHaveBeenCalledTimes(1);
-          expect(http.post).toHaveBeenCalledWith(
-            '/api/graphql',
-            {
-              operationName: 'UserMutation',
-              query: expect.stringContaining('mutation UserMutation') as string,
-              variables,
-            },
-            expect.objectContaining({
-              headers: expect.any(HttpHeaders) as HttpHeaders,
-            }),
-          );
-          expect(result).toEqual(data);
-          done();
+      expect(http.post).toHaveBeenCalledTimes(1);
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/graphql',
+        {
+          operationName: 'UserMutation',
+          query: expect.stringContaining('mutation UserMutation') as string,
+          variables,
         },
-      });
+        expect.objectContaining({
+          headers: expect.any(HttpHeaders) as HttpHeaders,
+        }),
+      );
+      expect(result).toEqual(data);
     });
 
-    it('should extract operation name correctly for mutation', (done) => {
+    it('should extract operation name correctly for mutation', async (): Promise<void> => {
       const { document, variables, data } = itemMutation.generateMock('user')();
       const { service, getRequestBody } = setup({ data });
 
-      service.mutate(document, variables).subscribe({
-        next: () => {
-          expect(
-            getRequestBody<{ operationName: string }>().operationName,
-          ).toBe('UserMutation');
-          done();
-        },
-      });
+      await lastValueFrom(service.mutate(document, variables));
+
+      expect(getRequestBody<{ operationName: string }>().operationName).toBe(
+        'UserMutation',
+      );
     });
   });
 
   describe('batch', () => {
-    it('should send batch request with multiple operations and merge responses correctly', (done) => {
+    it('should send batch request with multiple operations and merge responses correctly', async (): Promise<void> => {
       const [userQuery, postsListQuery] = [
         itemQuery.generateMock('user')('1'),
         listQuery.generateMock('posts')(10),
@@ -156,59 +143,51 @@ describe('GraphQLClient', () => {
         { data: userQuery.data },
         { data: postsListQuery.data },
       ]);
-
-      service
-        .batch([
+      const result = await lastValueFrom(
+        service.batch([
           { document: userQuery.document, variables: userQuery.variables },
           {
             document: postsListQuery.document,
             variables: postsListQuery.variables,
           },
-        ])
-        .subscribe({
-          next: (result) => {
-            expect(http.post).toHaveBeenCalledWith(
-              '/api/graphql',
-              [
-                {
-                  operationName: 'UserQuery',
-                  query: expect.stringContaining('query UserQuery') as string,
-                  variables: userQuery.variables,
-                },
-                {
-                  operationName: 'PostsListQuery',
-                  query: expect.stringContaining(
-                    'query PostsListQuery',
-                  ) as string,
-                  variables: postsListQuery.variables,
-                },
-              ],
-              expect.objectContaining({
-                headers: expect.any(HttpHeaders) as HttpHeaders,
-              }),
-            );
-            expect(result).toEqual({
-              ...userQuery.data,
-              ...postsListQuery.data,
-            });
-            done();
+        ]),
+      );
+
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/graphql',
+        [
+          {
+            operationName: 'UserQuery',
+            query: expect.stringContaining('query UserQuery') as string,
+            variables: userQuery.variables,
           },
-        });
-    });
-
-    it('should handle single response correctly in batch', (done) => {
-      const { document, variables, data } = itemQuery.generateMock('user')();
-      const { service } = setup({ data });
-
-      service.batch([{ document, variables }]).subscribe({
-        next: (result) => {
-          expect(result).toEqual(data);
-          done();
-        },
+          {
+            operationName: 'PostsListQuery',
+            query: expect.stringContaining('query PostsListQuery') as string,
+            variables: postsListQuery.variables,
+          },
+        ],
+        expect.objectContaining({
+          headers: expect.any(HttpHeaders) as HttpHeaders,
+        }),
+      );
+      expect(result).toEqual({
+        ...userQuery.data,
+        ...postsListQuery.data,
       });
     });
 
-    it('should concatenate arrays when merging batch responses', (done) => {
+    it('should handle single response correctly in batch', async (): Promise<void> => {
+      const { document, variables, data } = itemQuery.generateMock('user')();
+      const { service } = setup({ data });
+      const result = await lastValueFrom(
+        service.batch([{ document, variables }]),
+      );
+
+      expect(result).toEqual(data);
+    });
+
+    it('should concatenate arrays when merging batch responses', async (): Promise<void> => {
       const [firstList, secondList] = [
         listQuery.generateMock('items')(2),
         listQuery.generateMock('items')(1, 3),
@@ -217,79 +196,66 @@ describe('GraphQLClient', () => {
         { data: firstList.data },
         { data: secondList.data },
       ]);
-
-      service
-        .batch([
+      const result = await lastValueFrom(
+        service.batch([
           { document: firstList.document, variables: firstList.variables },
           { document: secondList.document, variables: secondList.variables },
-        ])
-        .subscribe({
-          next: (result) => {
-            expect(result).toEqual({
-              items: [...firstList.data['items'], ...secondList.data['items']],
-            });
-            done();
-          },
-        });
+        ]),
+      );
+
+      expect(result).toEqual({
+        items: [...firstList.data['items'], ...secondList.data['items']],
+      });
     });
   });
 
   describe('request formatting', () => {
-    it('should set Content-Type header to application/json', (done) => {
+    it('should set Content-Type header to application/json', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock('user')();
       const { service, getRequestOptions } = setup({ data });
 
-      service.query(document, variables).subscribe({
-        next: () => {
-          const headers = getRequestOptions()?.headers as HttpHeaders;
-          expect(headers.get('Content-Type')).toBe('application/json');
-          done();
-        },
-      });
+      await lastValueFrom(service.query(document, variables));
+
+      const headers = getRequestOptions()?.headers as HttpHeaders;
+      expect(headers.get('Content-Type')).toBe('application/json');
     });
 
-    it('should merge HttpHeaders with default Content-Type header', (done) => {
+    it('should merge HttpHeaders with default Content-Type header', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock('user')();
       const { service, getRequestOptions } = setup({ data });
       const authorizationToken = 'Bearer test-token';
 
-      service
-        .query(document, variables, {
+      await lastValueFrom(
+        service.query(document, variables, {
           headers: new HttpHeaders({
             Authorization: authorizationToken,
           }),
-        })
-        .subscribe({
-          next: () => {
-            const headers = getRequestOptions()?.headers as HttpHeaders;
-            expect(headers.get('Content-Type')).toBe('application/json');
-            expect(headers.get('Authorization')).toBe(authorizationToken);
-            done();
-          },
-        });
+        }),
+      );
+
+      const headers = getRequestOptions()?.headers as HttpHeaders;
+      expect(headers.get('Content-Type')).toBe('application/json');
+      expect(headers.get('Authorization')).toBe(authorizationToken);
     });
 
-    it('should merge literal headers with default Content-Type header', (done) => {
+    it('should merge literal headers with default Content-Type header', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock('user')();
       const { service, getRequestOptions } = setup({ data });
 
-      service
-        .query(document, variables, {
+      await lastValueFrom(
+        service.query(document, variables, {
           headers: {
             Authorization: 'Bearer literal-token',
           },
-        })
-        .subscribe({
-          next: () => {
-            const headers = getRequestOptions()?.headers as HttpHeaders;
-            expect(headers.get('Content-Type')).toBe('application/json');
-            expect(headers.get('Authorization')).toBe('Bearer literal-token');
-            done();
-          },
-        });
+        }),
+      );
+
+      const headers = getRequestOptions()?.headers as HttpHeaders;
+      expect(headers.get('Content-Type')).toBe('application/json');
+      expect(headers.get('Authorization')).toBe('Bearer literal-token');
     });
 
-    it('should handle query without operation name', (done) => {
+    it('should handle query without operation name', async (): Promise<void> => {
       const { document, variables, data } = itemQuery.generateMock(
         'test',
         '',
@@ -297,17 +263,13 @@ describe('GraphQLClient', () => {
       const { service, getRequestBody } = setup({
         data,
       });
+      await lastValueFrom(service.query(document, variables));
 
-      service.query(document, variables).subscribe({
-        next: () => {
-          expect(
-            getRequestBody<{
-              operationName: string | undefined;
-            }>().operationName,
-          ).toBeUndefined();
-          done();
-        },
-      });
+      expect(
+        getRequestBody<{
+          operationName: string | undefined;
+        }>().operationName,
+      ).toBeUndefined();
     });
   });
 });
