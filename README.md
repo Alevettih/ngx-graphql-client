@@ -40,7 +40,7 @@ ngx-graphql-client/
 
 - Node.js 24+
 - npm 11+
-- Angular CLI 20.3+
+- Angular CLI 21+
 
 ### Install Dependencies
 
@@ -101,11 +101,12 @@ For detailed usage guidelines, see the
 
 ## Tech Stack
 
-- **Angular** 20+
+- **Angular** 21+
 - **TypeScript** 5.9+
 - **GraphQL** 16+
 - **RxJS** 7.8+
 - **es-toolkit** 1.41+
+- **Vitest** 4+ (for testing)
 
 ## License
 

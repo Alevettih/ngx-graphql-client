@@ -16,7 +16,7 @@
     "target": "ES2024",
     "module": "preserve",
     "paths": {
-      "ngx-graphql-client": ["./dist/ngx-graphql-client"]
+      "@alevettih/ngx-graphql-client": ["./dist/ngx-graphql-client"]
     }
   },
   "angularCompilerOptions": {
@@ -32,7 +32,7 @@
       "path": "./projects/ngx-graphql-client/tsconfig.lib.json"
     },
     {
-      "path": "./tsconfig.spec.json"
+      "path": "./projects/ngx-graphql-client/tsconfig.spec.json"
     }
   ]
 }
